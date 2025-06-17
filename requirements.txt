@@ -1,0 +1,11 @@
+# This file lists the Python package dependencies for the SpendWise application.
+# Add one package requirement per line.
+# Example:
+# flask>=2.0
+# pandas
+# numpy==1.21.5
+
+Flask
+pandas
+openpyxl
+pdfplumber
