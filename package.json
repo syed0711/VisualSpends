@@ -1,0 +1,23 @@
+{
+  "name": "visualspends",
+  "version": "1.0.0",
+  "description": "SpendWise - Personal Spending Companion",
+  "main": "main.py",
+  "scripts": {
+    "build": "tailwindcss -i ./spendwise/static/css/input.css -o ./spendwise/static/css/output.css --minify",
+    "watch": "tailwindcss -i ./spendwise/static/css/input.css -o ./spendwise/static/css/output.css --watch"
+  },
+  "keywords": [
+    "flask",
+    "tailwind",
+    "spendwise",
+    "finance"
+  ],
+  "author": "SpendWise User (via AI Assistant)",
+  "license": "MIT",
+  "devDependencies": {
+    "tailwindcss": "^4.1.10",
+    "postcss": "^8.4.38",
+    "autoprefixer": "^10.4.19"
+  }
+}
