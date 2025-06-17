@@ -173,5 +173,10 @@ def get_category_breakdown():
     breakdown = [{'category': cat, 'total': round(total, 2)} for cat, total in sorted(category_data.items(), key=lambda item: item[1], reverse=True)]
     return jsonify(breakdown)
 
+# Add this context processor to make current_year available to all templates
+@app.context_processor
+def inject_current_year():
+    return {'current_year': datetime.utcnow().year}
+
 if __name__ == '__main__':
     app.run(debug=True)
