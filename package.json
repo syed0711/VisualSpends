@@ -4,8 +4,8 @@
   "description": "SpendWise - Personal Spending Companion",
   "main": "main.py",
   "scripts": {
-    "build": "./node_modules/.bin/tailwindcss -i ./spendwise/static/css/input.css -o ./spendwise/static/css/output.css --minify",
-    "watch": "./node_modules/.bin/tailwindcss -i ./spendwise/static/css/input.css -o ./spendwise/static/css/output.css --watch"
+    "build": "npm install && npx tailwindcss -i ./spendwise/static/css/input.css -o ./spendwise/static/css/output.css --minify",
+    "watch": "npx tailwindcss -i ./spendwise/static/css/input.css -o ./spendwise/static/css/output.css --watch"
   },
   "keywords": [
     "flask",
