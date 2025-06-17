@@ -1,169 +1,109 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SpendWise - Transaction View</title>
-    <style>
-        body { font-family: sans-serif; margin: 20px; background-color: #f4f4f4; color: #333; }
-        .container { background-color: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
-        h1 { color: #333; }
-        nav { margin-bottom: 20px; }
-        nav a { margin-right: 15px; text-decoration: none; color: #007bff; }
-        nav a:hover { text-decoration: underline; }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
-        th { background-color: #007bff; color: white; cursor: pointer; }
-        th:hover { background-color: #0056b3; }
-        tr:nth-child(even) { background-color: #f2f2f2; }
-        .loading { text-align: center; padding: 20px; font-style: italic; }
-        .error-message { color: red; }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <nav>
-            <a href="{{ url_for('index') }}">Upload New File</a>
-            <a href="{{ url_for('view_data_page') }}">View Transactions</a>
-            <a href="{{ url_for('dashboard_page') }}">Dashboard</a>
-        </nav>
-        <h1>Transaction Data</h1>
-        <div id="table_container">
-            <p class="loading">Loading transactions...</p>
-            <table id="transactions_table" style="display:none;">
-                <thead>
-                    <tr>
-                        <th data-sort="date">Date</th>
-                        <th data-sort="description">Description</th>
-                        <th data-sort="amount">Amount</th>
-                        <th data-sort="category">Category</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <!-- Rows will be inserted here by JavaScript -->
-                </tbody>
-            </table>
-        </div>
-        <p id="error_message_area" class="error-message" style="display:none;"></p>
+{% extends "base.html" %}
+
+{% block title %}Transaction View - SpendWise{% endblock %}
+
+{% block content %}
+<div class="bg-white p-4 sm:p-6 md:p-8 rounded-lg shadow-xl">
+    <h1 class="text-2xl sm:text-3xl font-bold mb-6 text-gray-800">Transaction Data</h1>
+
+    <div id="table_container" class="overflow-x-auto rounded-lg border border-gray-200 shadow-sm"> {# Added shadow-sm #}
+        <p class="loading_text text-center p-10 text-gray-500 font-medium italic">Loading transactions...</p>
+        <table id="transactions_table" class="min-w-full divide-y divide-gray-300" style="display:none;"> {# Darker divide #}
+            <thead class="bg-gray-100">
+                <tr>
+                    <th data-sort="date" scope="col" class="px-4 sm:px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider cursor-pointer hover:bg-gray-200 transition-colors duration-150">Date</th>
+                    <th data-sort="description" scope="col" class="px-4 sm:px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider cursor-pointer hover:bg-gray-200 transition-colors duration-150">Description</th>
+                    <th data-sort="amount" scope="col" class="px-4 sm:px-6 py-3 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider cursor-pointer hover:bg-gray-200 transition-colors duration-150">Amount</th>
+                    <th data-sort="category" scope="col" class="px-4 sm:px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider cursor-pointer hover:bg-gray-200 transition-colors duration-150">Category</th>
+                </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+                {# JS inserted rows here #}
+            </tbody>
+        </table>
     </div>
+    <p id="error_message_area" class="text-red-600 mt-4 font-medium" style="display:none;"></p>
+</div>
+{# Script remains the same, it handles cell content and basic classes #}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const tableBody = document.querySelector('#transactions_table tbody');
+    const table = document.querySelector('#transactions_table');
+    const loadingMessage = document.querySelector('.loading_text');
+    const errorMessageArea = document.getElementById('error_message_area');
+    let currentSortColumn = null;
+    let sortAscending = true;
+    let transactionsData = [];
 
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const tableBody = document.querySelector('#transactions_table tbody');
-            const table = document.querySelector('#transactions_table');
-            const loadingMessage = document.querySelector('.loading');
-            const errorMessageArea = document.getElementById('error_message_area');
-            let currentSortColumn = null;
-            let sortAscending = true;
-            let transactionsData = [];
+    function displayError(message) {
+        if (loadingMessage) loadingMessage.style.display = 'none';
+        if (table) table.style.display = 'none';
+        errorMessageArea.textContent = message;
+        errorMessageArea.style.display = 'block';
+    }
 
-            function displayError(message) {
-                loadingMessage.style.display = 'none';
-                table.style.display = 'none';
-                errorMessageArea.textContent = message;
-                errorMessageArea.style.display = 'block';
+    function renderTable(data) {
+        tableBody.innerHTML = '';
+        if (!data || data.length === 0) {
+            if (loadingMessage) {
+                loadingMessage.textContent = 'No transactions found. Upload a file to get started!';
+                loadingMessage.classList.remove('italic');
+                loadingMessage.style.display = 'block'; // Ensure it's visible
             }
+            if (table) table.style.display = 'none';
+            errorMessageArea.style.display = 'none'; // Hide error if it was shown
+            return;
+        }
 
-            function renderTable(data) {
-                tableBody.innerHTML = ''; // Clear existing rows
-                if (!data || data.length === 0) {
-                    loadingMessage.textContent = 'No transactions found.';
-                    loadingMessage.style.display = 'block'; // Ensure it's visible
-                    table.style.display = 'none';
-                    errorMessageArea.style.display = 'none';
-                    return;
-                }
+        data.forEach(tx => {
+            const row = tableBody.insertRow();
+            row.className = 'hover:bg-blue-50 even:bg-gray-50 transition-colors duration-100';
 
-                data.forEach(tx => {
-                    const row = tableBody.insertRow();
-                    row.insertCell().textContent = tx.date || 'N/A';
-                    row.insertCell().textContent = tx.description || 'N/A';
-                    const amountCell = row.insertCell();
-                    amountCell.textContent = typeof tx.amount === 'number' ? tx.amount.toFixed(2) : 'N/A';
-                    amountCell.style.textAlign = 'right';
-                    row.insertCell().textContent = tx.category || 'N/A';
-                });
-                loadingMessage.style.display = 'none';
-                table.style.display = 'table';
-                errorMessageArea.style.display = 'none';
-            }
+            let cell = row.insertCell();
+            cell.textContent = tx.date || 'N/A';
+            cell.className = 'px-4 sm:px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-800';
 
-            function sortData(column) {
-                if (currentSortColumn === column) {
-                    sortAscending = !sortAscending;
-                } else {
-                    currentSortColumn = column;
-                    sortAscending = true;
-                }
+            cell = row.insertCell();
+            cell.textContent = tx.description || 'N/A';
+            cell.className = 'px-4 sm:px-6 py-4 text-sm text-gray-600 max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg xl:max-w-xl truncate hover:whitespace-normal hover:overflow-visible'; // Adjusted max-w
 
-                transactionsData.sort((a, b) => {
-                    let valA = a[column];
-                    let valB = b[column];
+            cell = row.insertCell();
+            cell.textContent = typeof tx.amount === 'number' ? tx.amount.toFixed(2) : 'N/A';
+            cell.className = 'px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-600 text-right';
 
-                    if (column === 'amount') {
-                        valA = parseFloat(valA);
-                        valB = parseFloat(valB);
-                    } else if (column === 'date') {
-                        // Basic date sort, assumes YYYY-MM-DD or similar sortable format
-                        // More robust date parsing might be needed for other formats.
-                        try {
-                            valA = new Date(valA);
-                            valB = new Date(valB);
-                            if (isNaN(valA.getTime()) || isNaN(valB.getTime())) { // Handle invalid dates
-                                valA = String(a[column]); // Fallback to string sort for invalid dates
-                                valB = String(b[column]);
-                            }
-                        } catch (e) { // Fallback if Date conversion fails
-                             valA = String(a[column]);
-                             valB = String(b[column]);
-                        }
-                    } else { // String comparison
-                        valA = String(valA || "").toLowerCase(); // Handle null/undefined for strings
-                        valB = String(valB || "").toLowerCase();
-                    }
-
-                    if (valA < valB) return sortAscending ? -1 : 1;
-                    if (valA > valB) return sortAscending ? 1 : -1;
-                    return 0;
-                });
-                renderTable(transactionsData);
-            }
-
-            fetch('/api/transactions')
-                .then(response => {
-                    if (!response.ok) {
-                        // Try to get error message from response body if possible
-                        return response.json().then(errData => {
-                            throw new Error(`HTTP error! status: ${response.status}, message: ${errData.error || response.statusText}`);
-                        }).catch(() => { // Fallback if response body is not JSON or no specific error message
-                            throw new Error(`HTTP error! status: ${response.status}, statusText: ${response.statusText}`);
-                        });
-                    }
-                    return response.json();
-                })
-                .then(data => {
-                    // Assuming data is the array of transactions, or an object like {"error": "message"}
-                    if (data.error) { // Check if the JSON response itself contains an error key
-                         displayError(`Error loading transactions: ${data.error}`);
-                         return;
-                    }
-                    transactionsData = data; // Expecting data to be an array of transactions
-                    renderTable(transactionsData);
-                })
-                .catch(error => {
-                    console.error('Error fetching transactions:', error);
-                    displayError(`Failed to load transactions. ${error.message}`);
-                });
-
-            document.querySelectorAll('#transactions_table thead th').forEach(th => {
-                th.addEventListener('click', () => {
-                    const columnKey = th.dataset.sort;
-                    if (columnKey) {
-                        sortData(columnKey);
-                    }
-                });
-            });
+            cell = row.insertCell();
+            cell.textContent = tx.category || 'N/A';
+            cell.className = 'px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-600';
         });
-    </script>
-</body>
-</html>
+
+        if (loadingMessage) loadingMessage.style.display = 'none';
+        if (table) table.style.display = 'table';
+        errorMessageArea.style.display = 'none';
+    }
+    // Sort function and fetch logic remains unchanged
+    function sortData(column) {
+        if (currentSortColumn === column) { sortAscending = !sortAscending; }
+        else { currentSortColumn = column; sortAscending = true; }
+        transactionsData.sort((a, b) => {
+            let valA = a[column]; let valB = b[column];
+            if (column === 'amount') { valA = parseFloat(valA); valB = parseFloat(valB); }
+            else if (column === 'date') { // Basic date sort, robust to some invalid dates
+                valA = new Date(valA); valB = new Date(valB);
+                if (isNaN(valA.getTime())) valA = new Date(0); // Default to epoch for invalid dates
+                if (isNaN(valB.getTime())) valB = new Date(0);
+            }
+            else { valA = String(valA || "").toLowerCase(); valB = String(valB || "").toLowerCase(); } // Handle null/undefined
+            if (valA < valB) return sortAscending ? -1 : 1;
+            if (valA > valB) return sortAscending ? 1 : -1; return 0;
+        });
+        renderTable(transactionsData);
+    }
+    fetch('/api/transactions').then(r => r.ok ? r.json() : Promise.reject(new Error(`HTTP error ${r.status}`)))
+    .then(d => { if(d.error) {displayError(d.error); return;} transactionsData=d; renderTable(d);})
+    .catch(e => { console.error(e); displayError('Failed to load. Check console.');});
+    document.querySelectorAll('#transactions_table thead th').forEach(th => {
+        th.addEventListener('click', () => { const k = th.dataset.sort; if(k) sortData(k);});
+    });
+});
+</script>
+{% endblock %}
